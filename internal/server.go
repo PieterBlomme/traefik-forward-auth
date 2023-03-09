@@ -92,7 +92,7 @@ func (s *Server) AuthHandler(providerName, rule string) http.HandlerFunc {
 		}
 
 		// Validate cookie
-		email, err := ValidateCookie(r, c)
+		email, scope, err := ValidateCookie(r, c)
 		if err != nil {
 			if err.Error() == "Cookie has expired" {
 				logger.Info("Cookie has expired")
@@ -115,6 +115,7 @@ func (s *Server) AuthHandler(providerName, rule string) http.HandlerFunc {
 		// Valid request
 		logger.Debug("Allowing valid request")
 		w.Header().Set("X-Forwarded-User", email)
+		w.Header().Set("X-Forwarded-Scope", scope)
 		w.WriteHeader(200)
 	}
 }
@@ -170,7 +171,8 @@ func (s *Server) AuthCallbackHandler() http.HandlerFunc {
 		http.SetCookie(w, ClearCSRFCookie(r, c))
 
 		// Exchange code for token
-		token, err := p.ExchangeCode(redirectUri(r), r.URL.Query().Get("code"))
+		token, scope, err := p.ExchangeCode(redirectUri(r), r.URL.Query().Get("code"))
+		logger.Info(scope)
 		if err != nil {
 			logger.WithField("error", err).Error("Code exchange failed with provider")
 			http.Error(w, "Service unavailable", 503)
@@ -186,7 +188,7 @@ func (s *Server) AuthCallbackHandler() http.HandlerFunc {
 		}
 
 		// Generate cookie
-		http.SetCookie(w, MakeCookie(r, user.Email))
+		http.SetCookie(w, MakeCookie(r, user.Email, scope))
 		logger.WithFields(logrus.Fields{
 			"provider": providerName,
 			"redirect": redirect,

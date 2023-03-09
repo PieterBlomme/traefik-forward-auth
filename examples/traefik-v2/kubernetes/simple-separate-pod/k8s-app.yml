@@ -49,9 +49,9 @@ metadata:
     app: whoami
 spec:
   entryPoints:
-    - http
+    - web
   routes:
-  - match: Host(`whoami.example.com`)
+  - match: "PathPrefix(`/whoami/`)"
     kind: Rule
     services:
       - name: whoami

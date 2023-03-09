@@ -57,13 +57,13 @@ func (o *GenericOAuth) GetLoginURL(redirectURI, state string) string {
 }
 
 // ExchangeCode exchanges the given redirect uri and code for a token
-func (o *GenericOAuth) ExchangeCode(redirectURI, code string) (string, error) {
+func (o *GenericOAuth) ExchangeCode(redirectURI, code string) (string, string, error) {
 	token, err := o.OAuthExchangeCode(redirectURI, code)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return token.AccessToken, nil
+	return token.AccessToken, "", nil
 }
 
 // GetUser uses the given token and returns a complete provider.User object

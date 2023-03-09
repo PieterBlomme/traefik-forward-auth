@@ -12,9 +12,8 @@ import (
 type Google struct {
 	ClientID     string `long:"client-id" env:"CLIENT_ID" description:"Client ID"`
 	ClientSecret string `long:"client-secret" env:"CLIENT_SECRET" description:"Client Secret" json:"-"`
-	Scope        string
 	Prompt       string `long:"prompt" env:"PROMPT" default:"select_account" description:"Space separated list of OpenID prompt options"`
-
+	Scope       string `long:"scope" env:"SCOPE" description:"Scope"`
 	LoginURL *url.URL
 	TokenURL *url.URL
 	UserURL  *url.URL
@@ -32,7 +31,7 @@ func (g *Google) Setup() error {
 	}
 
 	// Set static values
-	g.Scope = "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"
+	//g.Scope = "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"
 	g.LoginURL = &url.URL{
 		Scheme: "https",
 		Host:   "accounts.google.com",
@@ -72,7 +71,7 @@ func (g *Google) GetLoginURL(redirectURI, state string) string {
 }
 
 // ExchangeCode exchanges the given redirect uri and code for a token
-func (g *Google) ExchangeCode(redirectURI, code string) (string, error) {
+func (g *Google) ExchangeCode(redirectURI, code string) (string, string, error) {
 	form := url.Values{}
 	form.Set("client_id", g.ClientID)
 	form.Set("client_secret", g.ClientSecret)
@@ -82,14 +81,15 @@ func (g *Google) ExchangeCode(redirectURI, code string) (string, error) {
 
 	res, err := http.PostForm(g.TokenURL.String(), form)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	var token token
+
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&token)
 
-	return token.Token, err
+	return token.Token, token.Scope, err
 }
 
 // GetUser uses the given token and returns a complete provider.User object

@@ -65,19 +65,19 @@ func (o *OIDC) GetLoginURL(redirectURI, state string) string {
 }
 
 // ExchangeCode exchanges the given redirect uri and code for a token
-func (o *OIDC) ExchangeCode(redirectURI, code string) (string, error) {
+func (o *OIDC) ExchangeCode(redirectURI, code string) (string, string, error) {
 	token, err := o.OAuthExchangeCode(redirectURI, code)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	// Extract ID token
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok {
-		return "", errors.New("Missing id_token")
+		return "", "", errors.New("Missing id_token")
 	}
 
-	return rawIDToken, nil
+	return rawIDToken, "", nil
 }
 
 // GetUser uses the given token and returns a complete provider.User object

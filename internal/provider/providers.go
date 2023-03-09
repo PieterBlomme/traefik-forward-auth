@@ -14,19 +14,22 @@ type Providers struct {
 	GenericOAuth GenericOAuth `group:"Generic OAuth2 Provider" namespace:"generic-oauth" env-namespace:"GENERIC_OAUTH"`
 }
 
+
+
 // Provider is used to authenticate users
 type Provider interface {
 	Name() string
 	GetLoginURL(redirectURI, state string) string
-	ExchangeCode(redirectURI, code string) (string, error)
+	ExchangeCode(redirectURI, code string) (string, string, error)
 	GetUser(token string) (User, error)
 	Setup() error
 }
 
 type token struct {
 	Token string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	Scope string `json:"scope"`
 }
-
 // User is the authenticated user
 type User struct {
 	Email string `json:"email"`

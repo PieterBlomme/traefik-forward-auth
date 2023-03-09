@@ -21,32 +21,27 @@ spec:
     spec:
       terminationGracePeriodSeconds: 60
       containers:
-      - image: thomseddon/traefik-forward-auth:2
+      - image: k3d-registry:5000/traefik-forward-auth:latest
+        imagePullPolicy: Always
         name: traefik-forward-auth
         ports:
         - containerPort: 4181
           protocol: TCP
         env:
-        - name: DOMAIN
-          value: "example.com"
-        # INSECURE_COOKIE is required unless using https entrypoint
+        - name: LOG_LEVEL
+          value: "debug"
         - name: INSECURE_COOKIE
           value: "true"
         - name: PROVIDERS_GOOGLE_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: traefik-forward-auth-secrets
-              key: traefik-forward-auth-google-client-id
+          value: 72515094321-f46g0uilgl4fkqf2fpk1sjfg06umtb27.apps.googleusercontent.com
         - name: PROVIDERS_GOOGLE_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: traefik-forward-auth-secrets
-              key: traefik-forward-auth-google-client-secret
+          value: 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
+        - name: PROVIDERS_GOOGLE_SCOPE
+          value: https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/bigquery
         - name: SECRET
-          valueFrom:
-            secretKeyRef:
-              name: traefik-forward-auth-secrets
-              key: traefik-forward-auth-secret
+          value: something
+        - name: URL_PATH
+          value: /auth/_oauth
 
 ---
 #
@@ -77,28 +72,25 @@ metadata:
   name: traefik-forward-auth
 spec:
   forwardAuth:
-    address: http://traefik-forward-auth:4181
-    authResponseHeaders:
-      - X-Forwarded-User
+    address: http://traefik-forward-auth.default.svc.cluster.local:4181
+    authResponseHeadersRegex: ^X-
 
----
-#
-# Secrets
-#
-# Kubernetes requires secret values to be converted to base64 when defined
-# explicitly like this. (use `echo -n 'secret-value' | base64`)
-#
-# These are here for completeness, in reality you may define these elsewhere,
-# for example using kustomize (shown in advanced examples)
-#
-apiVersion: v1
-kind: Secret
-metadata:
-  name: traefik-forward-auth-secrets
-  labels:
-    app: traefik-forward-auth
-type: Opaque
-data:
-  traefik-forward-auth-google-client-id: base64-client-id
-  traefik-forward-auth-google-client-secret: base64-client-secret
-  traefik-forward-auth-secret: base64-something-random
+# ---
+# #
+# # IngressRoute
+# #
+# apiVersion: traefik.containo.us/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: traefik-forward-auth
+#   labels:
+#     app: traefik-forward-auth
+# spec:
+#   entryPoints:
+#     - web
+#   routes:
+#   - match: "PathPrefix(`/auth/`)"
+#     kind: Rule
+#     services:
+#       - name: traefik-forward-auth
+#         port: 4181
